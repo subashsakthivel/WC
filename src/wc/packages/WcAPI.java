@@ -1,5 +1,7 @@
 package wc.packages;
 
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -34,16 +36,24 @@ public class WcAPI {
     }
 
     public static void readAllFile(String[] paths) throws InterruptedException {
-        ExecutorService tasks = Executors.newFixedThreadPool(10);
+        //ExecutorService tasks = Executors.newFixedThreadPool(10);
+        Thread[] threads = new Thread[paths.length];
+        int i=0;
         for(String path : paths) {
-            try {
-                tasks.submit(new WcReader(path));
-            } catch (Exception e) {
-                System.out.println(path + " file Not found");
-            }
+            threads[i] = new Thread(() -> {
+                try {
+                    System.out.println(new WcReader(path).toStrings());
+                } catch (IOException e) {
+                    System.out.println(path + " file Not found");
+                }
+            });
+            threads[i++].start();
         }
-        tasks.shutdown();
-        while(!tasks.isTerminated()) {};
+        //tasks.shutdown();
+        //while(!tasks.isTerminated()) {};
+        //latch.await();
+        for(i=0;i<paths.length;i++)
+            threads[i].join();
         new WcReader().totals();
     }
 
