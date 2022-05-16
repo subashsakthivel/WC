@@ -78,6 +78,20 @@ public class WcReader implements WcOperations, Runnable {
         }
         return file.getName() + "  "+ noLines + " " + noBytes + " " + noChars + " " + noWords;
     }
+    public String toStrings() {
+        reader();
+        totalLine = totalLine + noLines;
+        totalWords = totalWords + noWords;
+        totalBytes= totalBytes + noBytes;
+        totalChars= totalChars + noChars;
+        try {
+            bufferedInputStream.close();
+            fis.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return file.getName() + "  "+ noLines + " " + noBytes + " " + noChars + " " + noWords;
+    }
     public void totals() {
         System.out.println("Totals " + totalLine + " " + totalBytes + " " + totalChars + " " + totalWords);
     }
@@ -116,9 +130,6 @@ public class WcReader implements WcOperations, Runnable {
     @Override
     public void run() {
         System.out.println(this);
-        totalLine = totalLine + noLines;
-        totalWords = totalWords + noWords;
-        totalBytes= totalBytes + noBytes;
-        totalChars= totalChars + noChars;
+
     }
 }
