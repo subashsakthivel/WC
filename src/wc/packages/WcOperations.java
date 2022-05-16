@@ -3,10 +3,9 @@ package wc.packages;
 import java.io.IOException;
 
 public interface WcOperations {
-    public int lines();
-    public int words() throws IOException;
-    public int chars();
-    public int bytes();
-    public int longLineLen();
-    public void details();
+    public String lines();
+    public String words() throws IOException;
+    public String chars();
+    public String bytes();
+    public String longLineLen();
 }
