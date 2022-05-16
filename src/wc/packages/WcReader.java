@@ -62,17 +62,7 @@ public class WcReader implements WcOperations, Runnable {
                 }
             }
             this.noBytes = this.noChars * Character.BYTES;
-            this.fileRead = true;
         } catch ( Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void checking(){
-        try {
-            if (!this.fileRead)
-                reader();
-        } catch ( Exception e){
             e.printStackTrace();
         }
     }
@@ -93,51 +83,35 @@ public class WcReader implements WcOperations, Runnable {
     }
 
     @Override
-    public int lines() {
-        System.out.print(file.getName());
-        checking();
-        return noLines;
+    public String lines() {
+        reader();
+        return file.getName() + " " +noLines;
     }
 
     @Override
-    public int words() {
-        System.out.print(file.getName());
-        checking();
-        return noWords;
+    public String words() {
+        reader();
+        return file.getName() + " " +noWords;
     }
 
     @Override
-    public int chars() {
-        System.out.print(file.getName());
-        checking();
-        return noChars;
+    public String chars() {
+        reader();
+        return file.getName() + " :" +noChars;
     }
 
     @Override
-    public int bytes() {
-        System.out.print(file.getName());
-        checking();
-        return noBytes*Character.BYTES;
+    public String bytes() {
+        reader();
+        return file.getName() + " " +noBytes*Character.BYTES;
     }
 
     @Override
-    public int longLineLen() {
-        System.out.print(file.getName());
-        checking();
-        return longLine;
+    public String longLineLen() {
+        reader();
+        return file.getName() + " " +longLine;
     }
 
-
-    @Override
-    public void details() {
-        checking();
-        System.out.println(file.getName());
-        System.out.println(this.noLines + " lines");
-        System.out.println(this.noBytes + " bytes");
-        System.out.println(this.noWords + " words");
-        System.out.println(this.noChars + " chars");
-        System.out.println("----------------------");
-    }
 
     @Override
     public void run() {
