@@ -56,7 +56,10 @@ public class WcAPI {
             if (args[0].equals("--help")) {
                 // help
                 help();
-            } else {
+            } else if(args[0].equals("--version")) {
+                System.out.println("1.0wc version");
+            }
+            else {
                 readFile('d' ,args[0]);
             }
         }
