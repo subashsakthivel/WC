@@ -1,167 +1,120 @@
 package wc.packages;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Path;
 
- class WcReader implements Runnable{
-     static private class Totals{
-         public static long nBytes;
-         public static long nChars;
-         public static long nWords;
-         public static long nLines;
-     }
+public class WcMain {
 
-    private final FileChannel fileChannel;
-    private final String fileName;
-    private final boolean large;
-    private final long limit;
-    private final long nBytes;
-    private final long nChars;
-    private long nWords;
-    private long nLines;
-
-
-    public WcReader(String fileName , FileChannel fileChannel , long start, long limit, boolean large) throws IOException {
-        this.fileName = fileName;
-        this.fileChannel = fileChannel;
-        this.nChars = limit-start;
-        this.nBytes = nChars*Character.BYTES;
-        this.limit = limit;
-        this.large = large;
-        if(large) {
-            if (start > 0) fileChannel.position(start - 1);
-            if (start == 0) nWords++;
-            else fileChannel.position(start);
-        }
+    private static void version(){
+        System.out.println("Version 1.01");
     }
 
-    private void reader() throws IOException{
-        int noOfBytesRead = 0;
-        while(noOfBytesRead != -1) {
-            ByteBuffer buffer = ByteBuffer.allocate(10000);
-            noOfBytesRead = fileChannel.read(buffer);
-            buffer.flip();
-            char x;
-            while(buffer.hasRemaining() ){
-                x = (char)buffer.get();
-                if(x=='\n')
-                {
-                    nLines++;
-                }
-                else if(x!= ' ') {
-                    while(buffer.hasRemaining() && x!=' '){
-                        //  System.out.print(x);
-                        x = (char)buffer.get();
-                        if(x=='\n') {
-                            nLines++;
-                            break;
-                        }
-                    }
-                    nWords++;
-                    //      System.out.println(",");
-                }
+    private  static  void help() {
+        System.out.println("""
+                            wc file (or) files -> bytes chars words lines
+                            wc -l file -> no of lines
+                            wc -w file -> no of words
+                            wc -m file -> no of characters
+                            wc -c file -> no of bytes
+                            wc -L file -> no of Longest line
+                            Try this""");
+    }
+
+    private static void readLargeFile(char cmd , String path) {
+        Path of = Path.of(path);
+        try(FileChannel fileChannel = FileChannel.open(of)){
+            long start =0;
+            int noOfThreads = Runtime.getRuntime().availableProcessors() + 1;
+            long totalBytes = fileChannel.size();
+            long noOfBytesPerThread = totalBytes/noOfThreads;
+            long remainingBytes = totalBytes%noOfThreads;
+            Thread[] threads = new Thread[noOfThreads + 1];
+            int i;
+            for(i=0;i<noOfThreads;i++){
+                WcReader reader = new WcReader(path , FileChannel.open(of), start , start+noOfBytesPerThread, true);
+                threads[i] = new Thread(reader);
+                threads[i].start();
+                start += noOfBytesPerThread;
             }
-        }
-        synchronized (this) {
-            Totals.nBytes += this.nBytes;
-            Totals.nChars += this.nChars;
-            Totals.nLines += this.nLines;
-            Totals.nWords += this.nWords;
-        }
-    }
-    private void readLarger() throws IOException {
-        int noOfBytesRead = 0;
-        long start= fileChannel.position();
-        boolean precaution = true;
-        while(noOfBytesRead != -1 && start<limit) {
-            ByteBuffer buffer = ByteBuffer.allocate(10000);
-            noOfBytesRead = fileChannel.read(buffer);
-            buffer.flip();
-            char x;
-            if(precaution && buffer.hasRemaining()) {
-                x = (char) buffer.get();
-                if (x != ' ') nWords--;
-                if (x == '\n') nWords++;
-                precaution = false;
+            if(remainingBytes > 0) {
+                WcReader reader = new WcReader(path, FileChannel.open(of), start-1, start + remainingBytes-1, true);
+                threads[noOfThreads] = new Thread(reader);
+                threads[noOfThreads].start();
             }
-            while(buffer.hasRemaining() && start<limit){
-                x = (char)buffer.get();
-                start++;
-                if(x=='\n')
-                {
-                    nLines++;
-                }
-                else if(x!= ' ') {
-                    while(buffer.hasRemaining() && x!=' ' && start<limit){
-                      //  System.out.print(x);
-                        x = (char)buffer.get();
-                        start++;
-                        if(x=='\n') {
-                            nLines++;
-                            break;
-                        }
-                    }
-                    nWords++;
-              //      System.out.println(",");
-                }
+            for(i = i-1;i>=0;i--){
+                while (threads[i].isAlive());
             }
+
+        }catch (Exception e){
+            e.printStackTrace();
         }
-        synchronized (this) {
-            Totals.nBytes += this.nBytes;
-            Totals.nChars += this.nChars;
-            Totals.nLines += this.nLines;
-            Totals.nWords += this.nWords;
-        }
+        System.out.print(path + " ");
+        WcReader.LargerResult();
     }
 
-    public static void totalResult(){
-        System.out.println("-Totals : " + " " + Totals.nBytes + " " + Totals.nChars + " "+Totals.nWords +" " + Totals.nLines);
-    }
+    private static void readFile(char cmd, String path) {
 
-    public static void LargerResult(){
-        System.out.println(Totals.nBytes + " " + Totals.nChars + " "+Totals.nWords + " "+ (Totals.nLines+1));
-    }
-
-    private void result(){
-       // "Bytes Chars Words Lines"
-        System.out.println("-" + fileName + " " + nBytes + " " + nChars + " "+nWords + " "+ nLines );
-    }
-
-    @Override
-    public void run() {
-        try {
-            if(large) {
-                readLarger();
-            } else {
-                reader();
-                result();
+        try(FileChannel fileChannel = FileChannel.open(Path.of(path))) {
+            WcReader reader = new WcReader(path, fileChannel, 0, fileChannel.size(), false);
+            if(fileChannel.size() > 10000000) {
+                readLargeFile(cmd , path);
+                return;
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            switch (cmd) {
+                case 'l' -> System.out.println(reader.lines());
+                case 'w' -> System.out.println(reader.words());
+                case 'm' -> System.out.println(reader.chars());
+                case 'c' -> System.out.println(reader.bytes());
+                case 'd' -> System.out.println(reader.details());
+                case 'L' -> System.out.println(reader.getLongestLine());
+                default -> help();
+            }
+        } catch (Exception e) {
+            //e.printStackTrace();
+            System.out.println(path + "File Not Found");
         }
     }
 
-    protected long lines() throws IOException {
-        reader();
-         return this.nLines;
-     }
+    private static void readAllFile(String[] paths) throws IOException {
+        Thread[] threads = new Thread[paths.length];
+        int i = 0;
+        for(String path : paths) {
+            FileChannel fileChannel = FileChannel.open(Path.of(path));
+            WcReader reader = new WcReader(path , fileChannel , 0 , fileChannel.size() , false);
+            threads[i] = new Thread(reader);
+            threads[i++].start();
+        }
 
-     protected long words() throws IOException {
-        reader();
-         return this.nWords;
-     }
+        for(i = i-1;i>=0;i--){
+            while (threads[i].isAlive());
+        }
+        WcReader.totalResult();
+    }
 
-     protected long chars() {
-         return this.nChars;
-     }
-
-     protected long bytes() {
-         return this.nBytes;
-     }
-
-     protected String details() throws IOException {
-        reader();
-        return nBytes + " " + nChars + " "+nWords + " "+ nLines;
-     }
- }
+    public static void main(String[] args) throws InterruptedException, IOException {
+        long time = System.currentTimeMillis();
+        int len = args.length;
+        switch(len) {
+            case 0: 
+                help();
+                break;
+            case 1:
+                if(args[0].equals("--help"))
+                    help();
+                else if(args[0].equals("--version"))
+                    version();
+                else readLargeFile('d', args[0]);
+                break;
+            case 2:
+                if(args[0].charAt(0)=='-')
+                    readFile(args[0].charAt(1), args[1]);
+                else readAllFile(args);
+                break;
+            default:
+                readAllFile(args);
+        }
+        System.out.println("Time taken : " + (System.currentTimeMillis() - time));
+    }
+}
