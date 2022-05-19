@@ -37,7 +37,6 @@ public class WcMain {
                 threads[i] = new Thread(reader);
                 threads[i].start();
                 start += noOfBytesPerThread;
-                threads[i].join();
             }
             if(remainingBytes > 0) {
                 WcReader reader = new WcReader(path, FileChannel.open(of), start-1, start + remainingBytes-1, true);
@@ -69,7 +68,7 @@ public class WcMain {
                 case 'm' -> System.out.println(reader.chars());
                 case 'c' -> System.out.println(reader.bytes());
                 case 'd' -> System.out.println(reader.details());
-                case 'L' -> System.out.println();
+                case 'L' -> System.out.println(reader.getLongestLine());
                 default -> help();
             }
         } catch (Exception e) {
