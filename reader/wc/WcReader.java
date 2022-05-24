@@ -23,10 +23,6 @@ class WcReader implements Runnable {
         }
     }
 
-    private void duck(){
-        System.out.println(nWords + " " + Thread.currentThread().getName());
-    }
-
     public WcReader(String path , long start , long limit) throws IOException {
         fileName = path;
         fileChannel = FileChannel.open(Path.of(path));
