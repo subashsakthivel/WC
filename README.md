@@ -31,5 +31,5 @@ wc.bat
 
 
 
-***It is basically on commandline perspective so if any one have to use this instanciate the Wc class and pass Args or array of String to the getResult methode*** 
+***It is basically on commandline perspective so if any one have to use this, instanciate the Wc class and pass Args or array of String to the getResult methode*** 
    
